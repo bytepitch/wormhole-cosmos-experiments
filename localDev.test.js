@@ -1,22 +1,17 @@
 import test from 'ava';
-import {
-  Wormhole,
-  createVAA,
-  deserialize,
-  serialize,
-} from '@wormhole-foundation/sdk';
+import { Wormhole, createVAA, serialize } from '@wormhole-foundation/sdk';
 
-import { serialiseVAA, sign } from '@certusone/wormhole-sdk';
 import {
   createAttestMetaVAA,
   addSignature,
   createSetMwVAA,
+  createUpdateChannelVAA,
 } from './vaaHelpers.js';
 import {
-  buildGatewayGovMessage,
   createSigner,
   sendAttestMetaTx,
   sendGatewayGovTx,
+  sendUpdateChannelInfoTx,
 } from './txHelpers.js';
 
 const config = {
@@ -40,7 +35,16 @@ const config = {
   guardianMnemonic:
     'notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius',
   wormchainFeePayer: 'wormhole1cyyzpxplxdzkeea7kwsydadg87357qna3zg3tq',
+  wormchainRpc: 'http://localhost:26659',
 };
+
+test.before(async (t) => {
+  const { guardianMnemonic, wormchainRpc } = config;
+  const client = await createSigner(guardianMnemonic, wormchainRpc);
+  t.context = {
+    client,
+  };
+});
 
 test('attest', async (t) => {
   const emitterInfo = {
@@ -139,37 +143,29 @@ test('createVaa', async (t) => {
  * submit this vaa to ibcTranslator
  */
 test('update channel info', async (t) => {
-  const updateChannelVaa = {
-    version: 1,
-    guardianSetIndex: 0,
-    signatures: [],
-    timestamp: 0,
-    nonce: 0,
-    emitterChain: 1,
-    emitterAddress:
-      '0000000000000000000000000000000000000000000000000000000000000004',
-    sequence: BigInt(Math.floor(Math.random() * 100000000)),
-    consistencyLevel: 0,
-    payload: {
-      type: 'Other',
-      hex:
-        '000000000000000000000000000000000000004962635472616e736c61746f72' + // Module IbcTranslator
-        '01' + // Action IbcReceiverActionUpdateChannelChain
-        '0c20' + // Target chain id wormchain
-        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006368616e6e656c2d30' + // Channel-0
-        '0014', // Chain id osmo-test-5 (20)
-    },
+  const { client } = t.context;
+  const { govEmitterAddress } = config;
+
+  /**
+   * @type {import('./vaaHelpers.js').EmitterInfo}
+   */
+  const emitterInfo = {
+    emitterChain: 'Solana',
+    emitterAddress: govEmitterAddress.toUniversalAddress(),
   };
-  updateChannelVaa.signatures = sign(
-    ['cfb12303a19cde580bb4dd771639b0d26bc68353645571a8cff516ab2ee113a0'],
-    updateChannelVaa,
-  );
 
-  const serialized = serialiseVAA(updateChannelVaa);
+  /**
+   * @type {import('./vaaHelpers.js').UpdateChannelPayloadInfo}
+   */
+  const payloadInfo = {
+    channelId: 'channel-0',
+    // This should be something present in https://github.com/wormhole-foundation/wormhole-sdk-ts/blob/80bbcd9ec0a8bbdc564c812996807b6cd98e0757/core/base/src/constants/chains.ts#L6
+    channelChain: 'Osmosis',
+  };
 
-  console.log(updateChannelVaa);
-  console.log(serialized);
-  console.log('BASE_64:', Buffer.from(serialized).toString('base64'));
+  const vaa = createUpdateChannelVAA(emitterInfo, payloadInfo, true);
+  const tx = await sendUpdateChannelInfoTx(client, vaa);
+  console.log('TX:', tx);
   t.pass();
 });
 

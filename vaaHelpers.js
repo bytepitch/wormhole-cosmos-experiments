@@ -19,12 +19,17 @@ import {
  *   decimals: number;
  *   symbol: string;
  *   name: string;
- * }} UpdateChannelPayloadInfo
+ * }} AttestMetaPayloadInfo
  *
  * @typedef {{
  *   chain: string;
  *   contractAddress: UniversalAddress;
  * }} SetIbcMwPayloadInfo
+ *
+ * @typedef {{
+ *   channelId: string;
+ *   chainChannel: string;
+ * }} UpdateChannelPayloadInfo
  */
 
 const config = {
@@ -67,7 +72,7 @@ export const getCommonVAAInfo = (emitterInfo, prevSequence = undefined) => {
 /**
  *
  * @param {EmitterInfo} emitterInfo
- * @param {UpdateChannelPayloadInfo} payloadInfo
+ * @param {AttestMetaPayloadInfo} payloadInfo
  * @param {boolean} [sign]
  */
 export const createAttestMetaVAA = (emitterInfo, payloadInfo, sign = false) => {
@@ -105,6 +110,36 @@ export const createSetMwVAA = (emitterInfo, payloadInfo, sign = false) => {
       chain: payloadInfo.chain,
       actionArgs: {
         contractAddress: payloadInfo.contractAddress,
+      },
+    },
+  });
+
+  if (sign) {
+    addSignature(config.guardianKey, vaa);
+  }
+
+  return vaa;
+};
+
+/**
+ *
+ * @param {EmitterInfo} emitterInfo
+ * @param {UpdateChannelPayloadInfo} payloadInfo
+ * @param {boolean} sign
+ */
+export const createUpdateChannelVAA = (
+  emitterInfo,
+  payloadInfo,
+  sign = false,
+) => {
+  const commons = getCommonVAAInfo(emitterInfo);
+  const vaa = createVAA('IbcBridge:ActionUpdateChannelChain', {
+    ...commons,
+    payload: {
+      chain: 'Wormchain',
+      actionArgs: {
+        channelId: payloadInfo.channelId,
+        channelChain: payloadInfo.channelChain,
       },
     },
   });

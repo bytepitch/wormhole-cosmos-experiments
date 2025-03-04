@@ -3,7 +3,7 @@ import { serialize } from '@wormhole-foundation/sdk';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { MsgExecuteGatewayGovernanceVaa } from '@wormhole-foundation/wormchain-sdk/lib/modules/wormhole_foundation.wormchain.wormhole/types/wormhole/tx.js';
-import { getRegistry } from './registryHelpers';
+import { getRegistry } from './registryHelpers.js';
 
 const config = {
   network: 'Devnet',
@@ -15,6 +15,8 @@ const config = {
   addresses: {
     tokenBridge:
       'wormhole1eyfccmjm6732k7wp4p6gdjwhxjwsvje44j0hfx8nkgrm8fs7vqfssvpdkx',
+    ibcTranslator:
+      'wormhole1wn625s4jcmvk0szpl85rj5azkfc6suyvf75q6vrddscjdphtve8sca0pvl',
   },
 };
 
@@ -44,7 +46,7 @@ export const createSigner = async (mnemonic, tendermintAddress) => {
   return client;
 };
 
-export const buildGatewayGovMessage = (vaa) => {
+const buildGatewayGovMessage = (vaa) => {
   const govMsg = {
     typeUrl: MSG_EXECUTE_GATEWAY_GOV,
     value: MsgExecuteGatewayGovernanceVaa.fromPartial({
@@ -56,22 +58,35 @@ export const buildGatewayGovMessage = (vaa) => {
   return govMsg;
 };
 
+/**
+ *
+ * @param {SigningStargateClient} client
+ * @param {{
+ *   msgRecord: Record<string, string>;
+ *   wasmContract: string;
+ *   feePayer: string;
+ * }} wasmOpts
+ * @returns
+ */
+export const sendWasmTx = async (
+  client,
+  { msgRecord, wasmContract, feePayer },
+) => {
+  const msg = buildExecuteMsg(feePayer, wasmContract, msgRecord);
+  const tx = await client.signAndBroadcast(feePayer, [msg], GAS_OPTS);
+
+  return tx;
+};
+
 export const sendAttestMetaTx = async (client, vaa) => {
-  const attestMsg = buildExecuteMsg(
-    config.wormchainFeePayer,
-    config.addresses.tokenBridge,
-    {
-      submit_vaa: { data: Buffer.from(serialize(vaa)).toString('base64') },
-    },
-  );
-
-  const executeRes = await client.signAndBroadcast(
-    config.wormchainFeePayer,
-    [attestMsg],
-    GAS_OPTS,
-  );
-
-  return executeRes;
+  const msgRecord = {
+    submit_vaa: { data: Buffer.from(serialize(vaa)).toString('base64') },
+  };
+  return sendWasmTx(client, {
+    msgRecord,
+    wasmContract: config.addresses.tokenBridge,
+    feePayer: config.wormchainFeePayer,
+  });
 };
 
 export const sendGatewayGovTx = async (client, vaa) => {
@@ -83,4 +98,18 @@ export const sendGatewayGovTx = async (client, vaa) => {
   );
 
   return executeRes;
+};
+
+export const sendUpdateChannelInfoTx = async (client, vaa) => {
+  const msgRecord = {
+    submit_update_chain_to_channel_map: {
+      vaa: Buffer.from(serialize(vaa)).toString('base64'),
+    },
+  };
+
+  return sendWasmTx(client, {
+    msgRecord,
+    wasmContract: config.addresses.ibcTranslator,
+    feePayer: config.wormchainFeePayer,
+  });
 };
