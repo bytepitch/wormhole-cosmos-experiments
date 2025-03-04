@@ -78,7 +78,7 @@ export const sendWasmTx = async (
   return tx;
 };
 
-export const sendAttestMetaTx = async (client, vaa) => {
+export const sendTbSubmitVaaTx = async (client, vaa) => {
   const msgRecord = {
     submit_vaa: { data: Buffer.from(serialize(vaa)).toString('base64') },
   };

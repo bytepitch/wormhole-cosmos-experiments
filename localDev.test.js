@@ -1,16 +1,16 @@
 import test from 'ava';
-import { Wormhole, createVAA, serialize } from '@wormhole-foundation/sdk';
+import { Wormhole } from '@wormhole-foundation/sdk';
 
 import {
   createAttestMetaVAA,
-  addSignature,
   createSetMwVAA,
   createUpdateChannelVAA,
+  createTransferWithPayloadVAA,
 } from './vaaHelpers.js';
 import {
   createSigner,
-  sendAttestMetaTx,
   sendGatewayGovTx,
+  sendTbSubmitVaaTx,
   sendUpdateChannelInfoTx,
 } from './txHelpers.js';
 
@@ -67,7 +67,7 @@ test('attest', async (t) => {
     config.guardianMnemonic,
     'http://localhost:26659',
   );
-  const txHash = await sendAttestMetaTx(client, attestMetaVaa);
+  const txHash = await sendTbSubmitVaaTx(client, attestMetaVaa);
   console.log('HASH', txHash);
 
   t.pass();
@@ -76,66 +76,94 @@ test('attest', async (t) => {
 /**
  * submit this vaa to tokenBridge and globalAccountant
  */
-test('createVaa', async (t) => {
-  const testTokenAddr = Wormhole.parseAddress(
-      'Solana',
-      '2WDq7wSs9zYrpx2kbHDA4RUTRch2CCTP6ZWaH4GNfnQQ',
-    ),
-    emitterAddress = Wormhole.parseAddress(
-      'Solana',
-      'ENG1wQ7CQKH8ibAJ1hSLmJgL9Ucg6DRDbj752ZAfidLA',
-    ),
-    receiver = Wormhole.parseAddress('Wormchain', 'ibc-translator'),
-    base64EncodedReceiver = new TextEncoder().encode(
-      'osmo1lwc58qfnwycw990cvq0yefnjqqvjgadlyaxdp6',
-    ),
-    myPayloadRaw = {
-      gateway_transfer: {
-        chain: 20,
-        fee: '0',
-        nonce: 77993,
-        recipient: Buffer.from(base64EncodedReceiver).toString('base64'),
-      },
-    },
-    encoder = new TextEncoder(),
-    payloadBytes = encoder.encode(JSON.stringify(myPayloadRaw)),
-    tokenBridgeVaa = createVAA('TokenBridge:TransferWithPayload', {
-      guardianSet: 0,
-      timestamp: 1,
-      nonce: 421,
-      emitterChain: 'Solana',
-      emitterAddress: emitterAddress.toUniversalAddress(),
-      sequence: 85431157n,
-      consistencyLevel: 0,
-      signatures: [],
-      payload: {
-        payloadId: 3,
-        fee: 0n,
-        token: {
-          amount: 100000000n,
-          address: testTokenAddr.toUniversalAddress(),
-          chain: 'Solana',
-        },
-        to: {
-          chain: 'Wormchain',
-          address: receiver.toUniversalAddress(),
-        },
-        from: emitterAddress.toUniversalAddress(),
-        payload: payloadBytes,
-      },
-    });
+test('send-to-osmo', async (t) => {
+  // const testTokenAddr = Wormhole.parseAddress(
+  //     'Solana',
+  //     '2WDq7wSs9zYrpx2kbHDA4RUTRch2CCTP6ZWaH4GNfnQQ',
+  //   ),
+  //   receiver = Wormhole.parseAddress('Wormchain', 'ibc-translator'),
+  //   base64EncodedReceiver = new TextEncoder().encode(
+  //     'osmo1lwc58qfnwycw990cvq0yefnjqqvjgadlyaxdp6',
+  //   ),
+  //   myPayloadRaw = {
+  //     gateway_transfer: {
+  //       chain: 20,
+  //       fee: '0',
+  //       nonce: 77993,
+  //       recipient: Buffer.from(base64EncodedReceiver).toString('base64'),
+  //     },
+  //   },
+  //   encoder = new TextEncoder(),
+  //   payloadBytes = encoder.encode(JSON.stringify(myPayloadRaw));
+  // const tokenBridgeVaa = createVAA('TokenBridge:TransferWithPayload', {
+  //   guardianSet: 0,
+  //   timestamp: 1,
+  //   nonce: 421,
+  //   emitterChain: 'Solana',
+  //   emitterAddress: emitterAddress.toUniversalAddress(),
+  //   sequence: 85431157n,
+  //   consistencyLevel: 0,
+  //   signatures: [],
+  //   payload: {
+  //     payloadId: 3,
+  //     fee: 0n,
+  //     token: {
+  //       amount: 100000000n,
+  //       address: testTokenAddr.toUniversalAddress(),
+  //       chain: 'Solana',
+  //     },
+  //     to: {
+  //       chain: 'Wormchain',
+  //       address: receiver.toUniversalAddress(),
+  //     },
+  //     from: emitterAddress.toUniversalAddress(),
+  //     payload: payloadBytes,
+  //   },
+  // });
 
-  addSignature(
-    'cfb12303a19cde580bb4dd771639b0d26bc68353645571a8cff516ab2ee113a0',
-    tokenBridgeVaa,
+  const { client } = t.context;
+  const { emitterAddress, tokenAddress, ibcTranslatorAddress } = config;
+
+  /**
+   * @type {import('./vaaHelpers.js').EmitterInfo}
+   */
+  const emitterInfo = {
+    emitterAddress,
+    emitterChain: 'Solana',
+  };
+
+  const encoder = new TextEncoder();
+
+  const osmosisReceiver = encoder.encode(
+    'osmo1lwc58qfnwycw990cvq0yefnjqqvjgadlyaxdp6',
   );
+  const transferPayload = {
+    gateway_transfer: {
+      chain: 20, // Osmosis
+      fee: 0,
+      nonce: Math.floor(Math.random() * 1_000_000),
+      recipient: Buffer.from(osmosisReceiver).toString('base64'),
+    },
+  };
 
-  const tokenBridgeVaaBytes = serialize(tokenBridgeVaa);
+  /**
+   * @type {import('./vaaHelpers.js').TransferWithPayloadPayloadInfo}
+   */
+  const payloadInfo = {
+    fee: 0,
+    tokenAmount: 10000000,
+    tokenAddress: tokenAddress.toUniversalAddress(),
+    tokenChain: 'Solana',
+    toAddress: ibcTranslatorAddress.toUniversalAddress(),
+    toChain: 'Wormchain',
+    from: emitterAddress.toUniversalAddress(), // only a valid Solana address is enough
+    payload: encoder.encode(JSON.stringify(transferPayload)),
+  };
+  const vaa = createTransferWithPayloadVAA(emitterInfo, payloadInfo, true);
+  console.log(vaa);
 
-  console.log(tokenBridgeVaaBytes);
-  console.log(tokenBridgeVaa);
-  console.log(Buffer.from(tokenBridgeVaaBytes).toString('hex'));
-
+  const tx = await sendTbSubmitVaaTx(client, vaa);
+  console.log('TX:', tx);
   t.pass();
 });
 

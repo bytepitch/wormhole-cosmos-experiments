@@ -30,6 +30,17 @@ import {
  *   channelId: string;
  *   chainChannel: string;
  * }} UpdateChannelPayloadInfo
+ *
+ * @typedef  {{
+ *   fee: number;
+ *   tokenAmount: number;
+ *   tokenChain: string;
+ *   tokenAddress: UniversalAddress;
+ *   toChain: string;
+ *   toAddress: UniversalAddress;
+ *   from: UniversalAddress;
+ *   payload: Uint8Array
+ * }} TransferWithPayloadPayloadInfo
  */
 
 const config = {
@@ -141,6 +152,54 @@ export const createUpdateChannelVAA = (
         channelId: payloadInfo.channelId,
         channelChain: payloadInfo.channelChain,
       },
+    },
+  });
+
+  if (sign) {
+    addSignature(config.guardianKey, vaa);
+  }
+
+  return vaa;
+};
+
+/**
+ *
+ * @param {EmitterInfo} emitterInfo
+ * @param {TransferWithPayloadPayloadInfo} payloadInfo
+ * @param {boolean} sign
+ */
+export const createTransferWithPayloadVAA = (
+  emitterInfo,
+  payloadInfo,
+  sign,
+) => {
+  const {
+    fee,
+    tokenAddress,
+    tokenAmount,
+    tokenChain,
+    toAddress,
+    toChain,
+    from,
+    payload,
+  } = payloadInfo;
+
+  const commons = getCommonVAAInfo(emitterInfo);
+  const vaa = createVAA('TokenBridge:TransferWithPayload', {
+    ...commons,
+    payload: {
+      fee,
+      token: {
+        amount: tokenAmount,
+        address: tokenAddress,
+        chain: tokenChain,
+      },
+      to: {
+        chain: toChain,
+        address: toAddress,
+      },
+      from,
+      payload,
     },
   });
 
