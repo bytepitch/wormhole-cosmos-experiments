@@ -20,6 +20,11 @@ import {
  *   symbol: string;
  *   name: string;
  * }} UpdateChannelPayloadInfo
+ *
+ * @typedef {{
+ *   chain: string;
+ *   contractAddress: UniversalAddress;
+ * }} SetIbcMwPayloadInfo
  */
 
 const config = {
@@ -77,6 +82,30 @@ export const createAttestMetaVAA = (emitterInfo, payloadInfo, sign = false) => {
       decimals: payloadInfo.decimals,
       symbol: padString(payloadInfo.symbol),
       name: padString(payloadInfo.name),
+    },
+  });
+
+  if (sign) {
+    addSignature(config.guardianKey, vaa);
+  }
+
+  return vaa;
+};
+
+/**
+ *
+ * @param {EmitterInfo} emitterInfo
+ * @param {SetIbcMwPayloadInfo} payloadInfo
+ */
+export const createSetMwVAA = (emitterInfo, payloadInfo, sign = false) => {
+  const commons = getCommonVAAInfo(emitterInfo);
+  const vaa = createVAA('GatewayGovernance:SetIbcComposabilityMwContract', {
+    ...commons,
+    payload: {
+      chain: payloadInfo.chain,
+      actionArgs: {
+        contractAddress: payloadInfo.contractAddress,
+      },
     },
   });
 

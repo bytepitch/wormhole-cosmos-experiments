@@ -7,8 +7,17 @@ import {
 } from '@wormhole-foundation/sdk';
 
 import { serialiseVAA, sign } from '@certusone/wormhole-sdk';
-import { createAttestMetaVAA, addSignature } from './vaaHelpers.js';
-import { createSigner, sendAttestMetaTx } from './txHelpers.js';
+import {
+  createAttestMetaVAA,
+  addSignature,
+  createSetMwVAA,
+} from './vaaHelpers.js';
+import {
+  buildGatewayGovMessage,
+  createSigner,
+  sendAttestMetaTx,
+  sendGatewayGovTx,
+} from './txHelpers.js';
 
 const config = {
   emitterAddress: Wormhole.parseAddress(
@@ -20,12 +29,20 @@ const config = {
     'Solana',
     '2WDq7wSs9zYrpx2kbHDA4RUTRch2CCTP6ZWaH4GNfnQQ',
   ),
+  govEmitterAddress: Wormhole.parseAddress(
+    'Solana',
+    '0000000000000000000000000000000000000000000000000000000000000004',
+  ),
+  ibcTranslatorAddress: Wormhole.parseAddress(
+    'Wormchain',
+    'wormhole1wn625s4jcmvk0szpl85rj5azkfc6suyvf75q6vrddscjdphtve8sca0pvl',
+  ),
   guardianMnemonic:
     'notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius',
   wormchainFeePayer: 'wormhole1cyyzpxplxdzkeea7kwsydadg87357qna3zg3tq',
 };
 
-test.only('attest', async (t) => {
+test('attest', async (t) => {
   const emitterInfo = {
     emitterAddress: config.emitterAddress.toUniversalAddress(),
     emitterChain: 'Solana',
@@ -160,42 +177,30 @@ test('update channel info', async (t) => {
  * submit this vaa to wormchaind wormhole module
  */
 test('mw-set-vaa', async (t) => {
-  const emitterAddress = Wormhole.parseAddress(
-      'Solana',
-      '0000000000000000000000000000000000000000000000000000000000000004',
-    ),
-    mwAddress = Wormhole.parseAddress(
-      'Wormchain',
-      'wormhole1wn625s4jcmvk0szpl85rj5azkfc6suyvf75q6vrddscjdphtve8sca0pvl',
-    ),
-    base = createVAA('GatewayGovernance:SetIbcComposabilityMwContract', {
-      guardianSet: 0,
-      nonce: 0,
-      timestamp: 0,
-      signatures: [],
-      sequence: 0n,
-      emitterChain: 'Solana',
-      emitterAddress: emitterAddress.toUniversalAddress(),
-      consistencyLevel: 0,
-      payload: {
-        // Protocol: 'GatewayGovernance',
-        // Action: 'ScheduleUpgrade',
-        chain: 'Wormchain',
-        actionArgs: {
-          contractAddress: mwAddress,
-        },
-      },
-    }),
-    serializedVaa = serialize(base),
-    vaa = deserialize(
-      'GatewayGovernance:SetIbcComposabilityMwContract',
-      serializedVaa,
-    );
+  const { ibcTranslatorAddress, govEmitterAddress } = config;
 
-  console.log(base);
-  console.log(serializedVaa);
+  /**
+   * @type {import('./vaaHelpers.js').EmitterInfo}
+   */
+  const emitterInfo = {
+    emitterChain: 'Solana',
+    emitterAddress: govEmitterAddress.toUniversalAddress(),
+  };
+
+  /**
+   * @type {import('./vaaHelpers.js').SetIbcMwPayloadInfo}
+   */
+  const payloadInfo = {
+    chain: 'Wormchain',
+    contractAddress: ibcTranslatorAddress.toUniversalAddress(),
+  };
+
+  const vaa = createSetMwVAA(emitterInfo, payloadInfo, true);
   console.log(vaa);
-  console.log(Buffer.from(serializedVaa).toString('hex'));
+
+  const tx = await sendGatewayGovTx(vaa);
+  console.log('TX:', tx);
+
   t.pass();
 });
 

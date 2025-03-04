@@ -1,16 +1,9 @@
-import {
-  buildExecuteMsg,
-  CosmwasmUnsignedTransaction,
-} from '@wormhole-foundation/sdk-cosmwasm';
-
+import { buildExecuteMsg } from '@wormhole-foundation/sdk-cosmwasm';
 import { serialize } from '@wormhole-foundation/sdk';
-
 import { SigningStargateClient } from '@cosmjs/stargate';
-
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
-
-import * as coreModule from '@wormhole-foundation/wormchain-sdk/lib/modules/wormhole_foundation.wormchain.wormhole/types/wormhole/tx.js';
-import * as wasm from '@wormhole-foundation/wormchain-sdk/lib/modules/cosmwasm.wasm.v1/index.js';
+import { MsgExecuteGatewayGovernanceVaa } from '@wormhole-foundation/wormchain-sdk/lib/modules/wormhole_foundation.wormchain.wormhole/types/wormhole/tx.js';
+import { getRegistry } from './registryHelpers';
 
 const config = {
   network: 'Devnet',
@@ -25,6 +18,9 @@ const config = {
   },
 };
 
+const MSG_EXECUTE_GATEWAY_GOV =
+  '/wormhole_foundation.wormchain.wormhole.MsgExecuteGatewayGovernanceVaa';
+
 const GAS_OPTS = {
   amount: [{ amount: '0', denom: 'uworm' }],
   gas: '10000000',
@@ -35,29 +31,29 @@ export const createSigner = async (mnemonic, tendermintAddress) => {
     prefix: config.prefix,
   });
 
+  const registry = getRegistry();
+
   const client = await SigningStargateClient.connectWithSigner(
     tendermintAddress,
     wallet,
     {
-      registry: wasm.registry,
+      registry,
     },
   );
 
   return client;
 };
 
-const createUnsignedTx = (txReq, description, parallelizable = false) => {
-  return new CosmwasmUnsignedTransaction(
-    txReq,
-    config.network,
-    config.chain,
-    description,
-    parallelizable,
-  );
-};
+export const buildGatewayGovMessage = (vaa) => {
+  const govMsg = {
+    typeUrl: MSG_EXECUTE_GATEWAY_GOV,
+    value: MsgExecuteGatewayGovernanceVaa.fromPartial({
+      signer: config.wormchainFeePayer,
+      vaa: serialize(vaa),
+    }),
+  };
 
-const buildGatewayGovMessage = (vaa) => {
-  coreModule.MsgExecuteGatewayGovernanceVaa();
+  return govMsg;
 };
 
 export const sendAttestMetaTx = async (client, vaa) => {
@@ -72,6 +68,17 @@ export const sendAttestMetaTx = async (client, vaa) => {
   const executeRes = await client.signAndBroadcast(
     config.wormchainFeePayer,
     [attestMsg],
+    GAS_OPTS,
+  );
+
+  return executeRes;
+};
+
+export const sendGatewayGovTx = async (client, vaa) => {
+  const govMsg = buildGatewayGovMessage(vaa);
+  const executeRes = await client.signAndBroadcast(
+    config.wormchainFeePayer,
+    [govMsg],
     GAS_OPTS,
   );
 

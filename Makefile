@@ -143,3 +143,8 @@ wrapped-asset-info:
 	q wasm contract-state smart $(CW_ADDR) \
 	'{"wrapped_asset_info": {}}' \
 	$(NODE)
+
+check-mw-contract:
+	cd $(WORMCHAIN_PATH) && ./build/wormchaind \
+	q wormhole show-ibc-composability-mw-contract \
+	$(NODE) -o json
