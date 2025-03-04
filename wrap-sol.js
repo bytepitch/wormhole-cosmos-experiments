@@ -4,7 +4,7 @@ import {
   getAccount,
   getAssociatedTokenAddress,
   getOrCreateAssociatedTokenAccount,
-} from "@solana/spl-token";
+} from '@solana/spl-token';
 import {
   Connection,
   Keypair,
@@ -13,14 +13,14 @@ import {
   Transaction,
   clusterApiUrl,
   sendAndConfirmTransaction,
-} from "@solana/web3.js";
-import { getKeypairFromEnvironment } from "@solana-developers/helpers";
-import "dotenv/config";
+} from '@solana/web3.js';
+import { getKeypairFromEnvironment } from '@solana-developers/helpers';
+import 'dotenv/config';
 
 (async () => {
-  const connection = new Connection(clusterApiUrl("devnet"), "confirmed"),
-    wallet = getKeypairFromEnvironment("SOL_PRIVATE_KEY");
-  console.log("HELP", wallet.secretKey);
+  const connection = new Connection(clusterApiUrl('devnet'), 'confirmed'),
+    wallet = getKeypairFromEnvironment('SOL_PRIVATE_KEY');
+  console.log('HELP', wallet.secretKey);
 
   // Const airdropSignature = await connection.requestAirdrop(
   //   Wallet.publicKey,
