@@ -24,11 +24,11 @@ FROM=wormhole1cyyzpxplxdzkeea7kwsydadg87357qna3zg3tq
 SIGN_SEND_FLAGS=--chain-id wormchain -bblock  --yes --gas-adjustment=1.2 --gas=auto --from $(FROM)
 NODE=--node=http://localhost:26659/
 
-MESSAGE='{"complete_transfer_and_convert":{"vaa":"$(COMPLETE_OSMO)"}}'
+MESSAGE_TRANSFER='{"complete_transfer_and_convert":{"vaa":"$(COMPLETE_OSMO)"}}'
 complete-ibc-transfer:
 	cd $(WORMCHAIN_PATH) && ./build/wormchaind --trace \
 	tx wasm execute $(IBC_TR_ADDR) \
-	$(MESSAGE) \
+	$(MESSAGE_TRANSFER) \
 	$(NODE) \
 	$(SIGN_SEND_FLAGS)
 
@@ -148,3 +148,10 @@ check-mw-contract:
 	cd $(WORMCHAIN_PATH) && ./build/wormchaind \
 	q wormhole show-ibc-composability-mw-contract \
 	$(NODE) -o json
+
+check-all-accounts:
+	cd $(WORMCHAIN_PATH) && ./build/wormchaind \
+	q wasm contract-state smart $(GA_ADDR) \
+	'{"all_accounts": {}}' \
+	$(NODE)
+	

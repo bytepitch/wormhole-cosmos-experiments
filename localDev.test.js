@@ -1,5 +1,6 @@
 import test from 'ava';
 import { Wormhole } from '@wormhole-foundation/sdk';
+import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 
 import {
   createAttestMetaVAA,
@@ -12,6 +13,7 @@ import {
   sendGatewayGovTx,
   sendTbSubmitVaaTx,
   sendUpdateChannelInfoTx,
+  sendGaSubmitVaaTx,
 } from './txHelpers.js';
 
 const config = {
@@ -234,3 +236,59 @@ test('mw-set-vaa', async (t) => {
 test.todo(
   'introduce tokenBridge as Wormchain emitter address in globalAccountant',
 );
+
+test('introduce transfer vaa to globalAccountant', async (t) => {
+  const { client } = t.context;
+  const { emitterAddress, tokenAddress, ibcTranslatorAddress } = config;
+
+  /**
+   * @type {import('./vaaHelpers.js').EmitterInfo}
+   */
+  const emitterInfo = {
+    emitterAddress,
+    emitterChain: 'Solana',
+  };
+
+  const encoder = new TextEncoder();
+
+  const osmosisReceiver = encoder.encode(
+    'osmo1lwc58qfnwycw990cvq0yefnjqqvjgadlyaxdp6',
+  );
+  const transferPayload = {
+    gateway_transfer: {
+      chain: 20, // Osmosis
+      fee: 0,
+      nonce: Math.floor(Math.random() * 1_000_000),
+      recipient: Buffer.from(osmosisReceiver).toString('base64'),
+    },
+  };
+
+  /**
+   * @type {import('./vaaHelpers.js').TransferWithPayloadPayloadInfo}
+   */
+  const payloadInfo = {
+    fee: 0,
+    tokenAmount: 10000000,
+    tokenAddress: tokenAddress.toUniversalAddress(),
+    tokenChain: 'Solana',
+    toAddress: ibcTranslatorAddress.toUniversalAddress(),
+    toChain: 'Wormchain',
+    from: emitterAddress.toUniversalAddress(), // only a valid Solana address is enough
+    payload: encoder.encode(JSON.stringify(transferPayload)),
+  };
+  const vaa = createTransferWithPayloadVAA(emitterInfo, payloadInfo, true);
+  console.log(vaa);
+
+  const tx = await sendGaSubmitVaaTx(client, vaa);
+  console.log('TX:', tx);
+
+  const rpc = await CosmWasmClient.connect(config.wormchainRpc);
+
+  const { accounts } = await rpc.queryContractSmart(
+    'wormhole14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9srrg465',
+    { all_accounts: {} },
+  );
+  console.log('accounts:', accounts);
+
+  t.pass();
+});

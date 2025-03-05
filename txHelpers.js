@@ -17,6 +17,8 @@ const config = {
       'wormhole1eyfccmjm6732k7wp4p6gdjwhxjwsvje44j0hfx8nkgrm8fs7vqfssvpdkx',
     ibcTranslator:
       'wormhole1wn625s4jcmvk0szpl85rj5azkfc6suyvf75q6vrddscjdphtve8sca0pvl',
+    globalAccountant:
+      'wormhole14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9srrg465',
   },
 };
 
@@ -110,6 +112,17 @@ export const sendUpdateChannelInfoTx = async (client, vaa) => {
   return sendWasmTx(client, {
     msgRecord,
     wasmContract: config.addresses.ibcTranslator,
+    feePayer: config.wormchainFeePayer,
+  });
+};
+
+export const sendGaSubmitVaaTx = async (client, vaa) => {
+  const msgRecord = {
+    submit_vaas: { vaas: [Buffer.from(serialize(vaa)).toString('base64')] },
+  };
+  return sendWasmTx(client, {
+    msgRecord,
+    wasmContract: config.addresses.globalAccountant,
     feePayer: config.wormchainFeePayer,
   });
 };
