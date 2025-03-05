@@ -32,6 +32,7 @@ import {
  * }} UpdateChannelPayloadInfo
  *
  * @typedef  {{
+ *   payloadId: number;
  *   fee: number;
  *   tokenAmount: number;
  *   tokenChain: string;
@@ -182,12 +183,14 @@ export const createTransferWithPayloadVAA = (
     toChain,
     from,
     payload,
+    payloadId,
   } = payloadInfo;
 
   const commons = getCommonVAAInfo(emitterInfo);
   const vaa = createVAA('TokenBridge:TransferWithPayload', {
     ...commons,
     payload: {
+      payloadId,
       fee,
       token: {
         amount: tokenAmount,

@@ -116,6 +116,19 @@ export const sendUpdateChannelInfoTx = async (client, vaa) => {
   });
 };
 
+export const sendCompleteTransferAndConvertTx = (client, vaa) => {
+  const msgRecord = {
+    complete_transfer_and_convert: {
+      vaa: Buffer.from(serialize(vaa)).toString('base64'),
+    },
+  };
+  return sendWasmTx(client, {
+    msgRecord,
+    wasmContract: config.addresses.ibcTranslator,
+    feePayer: config.wormchainFeePayer,
+  });
+};
+
 export const sendGaSubmitVaaTx = async (client, vaa) => {
   const msgRecord = {
     submit_vaas: { vaas: [Buffer.from(serialize(vaa)).toString('base64')] },
