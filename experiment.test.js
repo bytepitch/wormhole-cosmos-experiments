@@ -46,7 +46,7 @@ const addSignature = (guardianKey, vaa) => {
   vaa.signatures.push({ guardianIndex: 0, signature: s });
 };
 
-test('config', async (t) => {
+test('config', async t => {
   const wh = await wormhole('Mainnet', [cosmwasm, sol]),
     osmosis = wh.getChain('Wormchain'),
     solana = wh.getChain('Solana');
@@ -76,7 +76,7 @@ test('config', async (t) => {
   t.pass();
 });
 
-test('to Solana', async (t) => {
+test('to Solana', async t => {
   const wh = await wormhole('Testnet', [cosmwasm, sol]);
   osmosis = wh.getChain('Osmosis');
   solana = wh.getChain('Solana');
@@ -130,7 +130,7 @@ test('to Solana', async (t) => {
   // EXAMPLE_GATEWAY_OUTBOUND
 });
 
-test('to Solana, relayer pays redeeming', async (t) => {
+test('to Solana, relayer pays redeeming', async t => {
   const wh = await wormhole('Testnet', [cosmwasm, sol]),
     osmosis = wh.getChain('Osmosis'),
     solana = wh.getChain('Solana');
@@ -202,7 +202,7 @@ test('to Solana, relayer pays redeeming', async (t) => {
   // EXAMPLE_GATEWAY_OUTBOUND
 });
 
-test('to Cosmos', async (t) => {
+test('to Cosmos', async t => {
   const wh = await wormhole('Testnet', [cosmwasm, sol]);
   const osmosis = wh.getChain('Osmosis');
   const solana = wh.getChain('Solana');
@@ -253,7 +253,7 @@ test('to Cosmos', async (t) => {
   console.log('Got Attestations', attests);
 });
 
-test.skip('resume tx', async (t) => {
+test.skip('resume tx', async t => {
   const wh = await wormhole('Testnet', [cosmwasm, sol]),
     osmosis = wh.getChain('Osmosis'),
     solana = wh.getChain('Solana');

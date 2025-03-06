@@ -63,8 +63,8 @@ const registerTokenBridgeToAccountantLayout = () => {
       binary: 'bytes',
       size: 32,
       custom: {
-        from: (val) => encoder.encode(val.padStart(32, '\0')),
-        to: (val) => decoder.decode(val),
+        from: val => encoder.encode(val.padStart(32, '\0')),
+        to: val => decoder.decode(val),
       },
     },
     { name: 'type', binary: 'uint', size: 1 },
@@ -75,8 +75,8 @@ const registerTokenBridgeToAccountantLayout = () => {
       binary: 'bytes',
       size: 32,
       custom: {
-        to: (val) => new UniversalAddress(val),
-        from: (val) => val.toUint8Array(),
+        to: val => new UniversalAddress(val),
+        from: val => val.toUint8Array(),
       },
     },
   ];
@@ -91,7 +91,7 @@ export const addSignature = (guardianKey, vaa) => {
 
 const random = () => Math.floor(Math.random() * 10_000_00);
 
-const padString = (rawString) => rawString.padEnd(32, '\0');
+const padString = rawString => rawString.padEnd(32, '\0');
 
 /**
  *

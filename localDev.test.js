@@ -42,7 +42,7 @@ const config = {
   wormchainRpc: 'http://localhost:26659',
 };
 
-test.before(async (t) => {
+test.before(async t => {
   const { guardianMnemonic, wormchainRpc } = config;
   const client = await createSigner(guardianMnemonic, wormchainRpc);
   t.context = {
@@ -50,7 +50,7 @@ test.before(async (t) => {
   };
 });
 
-test('attest', async (t) => {
+test('attest', async t => {
   const { client } = t.context;
 
   const emitterInfo = {
@@ -78,7 +78,7 @@ test('attest', async (t) => {
 /**
  * submit this vaa to tokenBridge and globalAccountant
  */
-test('send-to-osmo', async (t) => {
+test('send-to-osmo', async t => {
   const { client } = t.context;
   const { emitterAddress, tokenAddress, ibcTranslatorAddress } = config;
 
@@ -129,7 +129,7 @@ test('send-to-osmo', async (t) => {
 /**
  * submit this vaa to ibcTranslator
  */
-test('update-channel-info', async (t) => {
+test('update-channel-info', async t => {
   const { client } = t.context;
   const { govEmitterAddress } = config;
 
@@ -159,7 +159,7 @@ test('update-channel-info', async (t) => {
 /**
  * submit this vaa to wormchaind wormhole module
  */
-test('mw-set-vaa', async (t) => {
+test('mw-set-vaa', async t => {
   const { ibcTranslatorAddress, govEmitterAddress } = config;
 
   /**
@@ -190,7 +190,7 @@ test('mw-set-vaa', async (t) => {
 /**
  * submit this vaa to globalAccountant
  */
-test('register-tb-to-accountant', async (t) => {
+test('register-tb-to-accountant', async t => {
   const { client } = t.context;
   const { govEmitterAddress, tokenBridgeAddress } = config;
 
@@ -214,7 +214,7 @@ test('register-tb-to-accountant', async (t) => {
   t.pass();
 });
 
-test('introduce transfer vaa to globalAccountant', async (t) => {
+test('introduce transfer vaa to globalAccountant', async t => {
   const { client } = t.context;
   const { emitterAddress, tokenAddress, ibcTranslatorAddress } = config;
 

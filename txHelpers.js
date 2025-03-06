@@ -48,7 +48,7 @@ export const createSigner = async (mnemonic, tendermintAddress) => {
   return client;
 };
 
-const buildGatewayGovMessage = (vaa) => {
+const buildGatewayGovMessage = vaa => {
   const govMsg = {
     typeUrl: MSG_EXECUTE_GATEWAY_GOV,
     value: MsgExecuteGatewayGovernanceVaa.fromPartial({
