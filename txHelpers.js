@@ -129,10 +129,11 @@ export const sendCompleteTransferAndConvertTx = (client, vaa) => {
   });
 };
 
-export const sendGaSubmitVaaTx = async (client, vaa) => {
+export const sendGaSubmitVaasTx = (client, vaa) => {
   const msgRecord = {
     submit_vaas: { vaas: [Buffer.from(serialize(vaa)).toString('base64')] },
   };
+
   return sendWasmTx(client, {
     msgRecord,
     wasmContract: config.addresses.globalAccountant,

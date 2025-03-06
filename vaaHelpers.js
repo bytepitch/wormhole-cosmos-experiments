@@ -3,6 +3,8 @@ import {
   Signature,
   keccak256,
   createVAA,
+  UniversalAddress,
+  serializeLayout,
 } from '@wormhole-foundation/sdk';
 
 /**
@@ -51,6 +53,35 @@ const config = {
     'cfb12303a19cde580bb4dd771639b0d26bc68353645571a8cff516ab2ee113a0',
 };
 
+const registerTokenBridgeToAccountantLayout = () => {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  return [
+    {
+      name: 'module',
+      binary: 'bytes',
+      size: 32,
+      custom: {
+        from: (val) => encoder.encode(val.padStart(32, '\0')),
+        to: (val) => decoder.decode(val),
+      },
+    },
+    { name: 'type', binary: 'uint', size: 1 },
+    { name: 'chain', binary: 'uint', size: 2 },
+    { name: 'emitterChain', binary: 'uint', size: 2 },
+    {
+      name: 'emitterAddress',
+      binary: 'bytes',
+      size: 32,
+      custom: {
+        to: (val) => new UniversalAddress(val),
+        from: (val) => val.toUint8Array(),
+      },
+    },
+  ];
+};
+
 export const addSignature = (guardianKey, vaa) => {
   const signature = SignatureUtils.sign(guardianKey, keccak256(vaa.hash));
   const s = new Signature(signature.r, signature.s, signature.recovery);
@@ -58,7 +89,7 @@ export const addSignature = (guardianKey, vaa) => {
   vaa.signatures.push({ guardianIndex: 0, signature: s });
 };
 
-const random = () => Math.floor(Math.random() * 10_000_000);
+const random = () => Math.floor(Math.random() * 10_000_00);
 
 const padString = (rawString) => rawString.padEnd(32, '\0');
 
@@ -204,6 +235,42 @@ export const createTransferWithPayloadVAA = (
       from,
       payload,
     },
+  });
+
+  if (sign) {
+    addSignature(config.guardianKey, vaa);
+  }
+
+  return vaa;
+};
+
+/**
+ *
+ * @param {EmitterInfo} emitterInfo
+ * @param {UniversalAddress} emitterContractAddr
+ * @param {boolean} sign
+ */
+export const createRegisterWormchainToAccountantVAA = (
+  emitterInfo,
+  emitterContractAddr,
+  sign = true,
+) => {
+  const commons = getCommonVAAInfo(emitterInfo);
+
+  const myCustomPayload = {
+    module: 'TokenBridge', // Informs the accountant that this is TB operation
+    type: 1, // Corresponds to 'RegisterChain'
+    emitterChain: 3104, // Id of the chain we are letting emit transfer events
+    chain: 0, // 0 means this VAA is a generic purpose one, not so important for us atm
+    emitterAddress: emitterContractAddr, // Address that accountant will let emit transfer events, for our case it is TokenBridge wasm contract deployed on Wormchain
+  };
+
+  const vaa = createVAA('Uint8Array', {
+    ...commons,
+    payload: serializeLayout(
+      registerTokenBridgeToAccountantLayout(),
+      myCustomPayload,
+    ),
   });
 
   if (sign) {

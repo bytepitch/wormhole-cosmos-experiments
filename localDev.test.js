@@ -7,14 +7,15 @@ import {
   createSetMwVAA,
   createUpdateChannelVAA,
   createTransferWithPayloadVAA,
+  createRegisterWormchainToAccountantVAA,
 } from './vaaHelpers.js';
 import {
   createSigner,
   sendCompleteTransferAndConvertTx,
   sendGatewayGovTx,
+  sendGaSubmitVaasTx,
   sendTbSubmitVaaTx,
   sendUpdateChannelInfoTx,
-  sendGaSubmitVaaTx,
 } from './txHelpers.js';
 
 const config = {
@@ -189,9 +190,29 @@ test('mw-set-vaa', async (t) => {
 /**
  * submit this vaa to globalAccountant
  */
-test.todo(
-  'introduce tokenBridge as Wormchain emitter address in globalAccountant',
-);
+test('register-tb-to-accountant', async (t) => {
+  const { client } = t.context;
+  const { govEmitterAddress, tokenBridgeAddress } = config;
+
+  /**
+   * @type {import('./vaaHelpers.js').EmitterInfo}
+   */
+  const emitterInfo = {
+    emitterChain: 'Solana',
+    emitterAddress: govEmitterAddress.toUniversalAddress(),
+  };
+
+  const vaa = createRegisterWormchainToAccountantVAA(
+    emitterInfo,
+    tokenBridgeAddress.toUniversalAddress(),
+  );
+  t.log(Buffer.from(serialize(vaa)).toString('hex'));
+
+  const tx = await sendGaSubmitVaasTx(client, vaa);
+  console.log('TX:', tx);
+
+  t.pass();
+});
 
 test('introduce transfer vaa to globalAccountant', async (t) => {
   const { client } = t.context;
@@ -235,7 +256,7 @@ test('introduce transfer vaa to globalAccountant', async (t) => {
   const vaa = createTransferWithPayloadVAA(emitterInfo, payloadInfo, true);
   console.log(vaa);
 
-  const tx = await sendGaSubmitVaaTx(client, vaa);
+  const tx = await sendGaSubmitVaasTx(client, vaa);
   console.log('TX:', tx);
 
   const rpc = await CosmWasmClient.connect(config.wormchainRpc);
