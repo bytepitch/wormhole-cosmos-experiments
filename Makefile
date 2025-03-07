@@ -156,4 +156,15 @@ check-all-accounts:
 	q wasm contract-state smart $(GA_ADDR) \
 	'{"all_accounts": {}}' \
 	$(NODE)
-	
+
+# Look for channel-0 counterparty channel_id
+check-wormchain-channels:
+	cd $(WORMCHAIN_PATH) && ./build/wormchaind \
+	q ibc channel channels \
+	$(NODE)
+
+# Remember to update the channel_id of the denom-trace
+check-osmosis-ibc-denom:
+	/Users/jorgelopes/go/bin/osmosisd q ibc-transfer denom-hash \
+	transfer/channel-10219/factory/wormhole1wn625s4jcmvk0szpl85rj5azkfc6suyvf75q6vrddscjdphtve8sca0pvl/5v4fjb5bdUNdEaXovRXeandqPwrV5oVeqGigAikMmuxm \
+	--node https://rpc.testnet.osmosis.zone:443

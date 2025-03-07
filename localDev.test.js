@@ -16,6 +16,7 @@ import {
   sendGaSubmitVaasTx,
   sendTbSubmitVaaTx,
   sendUpdateChannelInfoTx,
+  sendGatewayIbcTx,
 } from './txHelpers.js';
 
 const config = {
@@ -40,24 +41,40 @@ const config = {
     'Wormchain',
     'wormhole1wn625s4jcmvk0szpl85rj5azkfc6suyvf75q6vrddscjdphtve8sca0pvl',
   ),
+  globalAccountantAddress:
+    'wormhole14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9srrg465',
   guardianMnemonic:
     'notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius',
   wormchainFeePayer: 'wormhole1cyyzpxplxdzkeea7kwsydadg87357qna3zg3tq',
   wormchainRpc: 'http://localhost:26659',
+  osmosisAddress: 'osmo19clev5t3932g0cg2c8xa5sg5n77932qec9cyuh',
+  osmosisMnemonic:
+    'park unveil ugly act blur day kind chase say build next then spike wire minimum knee fox manage diet yard total firm gravity giraffe',
+  osmosisRpc: 'https://rpc.testnet.osmosis.zone/',
 };
 
 test.before(async t => {
-  const { guardianMnemonic, wormchainRpc } = config;
-  const client = await createSigner(guardianMnemonic, wormchainRpc);
+  const { guardianMnemonic, osmosisMnemonic, wormchainRpc, osmosisRpc } =
+    config;
+
+  const wormchainClient = await createSigner(
+    guardianMnemonic,
+    wormchainRpc,
+    'wormhole',
+  );
+
+  const osmosisClient = await createSigner(osmosisMnemonic, osmosisRpc, 'osmo');
+
   t.context = {
-    client,
+    wormchainClient,
+    osmosisClient,
   };
 });
 
 // ////////////////// Bootstrap Environment //////////////////
 
 test('update-channel-info', async t => {
-  const { client } = t.context;
+  const { wormchainClient } = t.context;
   const { govEmitterAddress } = config;
 
   /**
@@ -78,13 +95,13 @@ test('update-channel-info', async t => {
   };
 
   const vaa = createUpdateChannelVAA(emitterInfo, payloadInfo, true);
-  const tx = await sendUpdateChannelInfoTx(client, vaa);
+  const tx = await sendUpdateChannelInfoTx(wormchainClient, vaa);
   console.log('TX:', tx);
   t.pass();
 });
 
 test('mw-set-vaa', async t => {
-  const { client } = t.context;
+  const { wormchainClient } = t.context;
   const { ibcTranslatorAddress, govEmitterAddress } = config;
 
   /**
@@ -106,14 +123,14 @@ test('mw-set-vaa', async t => {
   const vaa = createSetMwVAA(emitterInfo, payloadInfo, true);
   t.log(Buffer.from(serialize(vaa)).toString('hex'));
 
-  const tx = await sendGatewayGovTx(client, vaa);
+  const tx = await sendGatewayGovTx(wormchainClient, vaa);
   console.log('TX:', tx);
 
   t.pass();
 });
 
 test('register-tb-to-accountant', async t => {
-  const { client } = t.context;
+  const { wormchainClient } = t.context;
   const { govEmitterAddress, tokenBridgeAddress } = config;
 
   /**
@@ -130,14 +147,14 @@ test('register-tb-to-accountant', async t => {
   );
   t.log(Buffer.from(serialize(vaa)).toString('hex'));
 
-  const tx = await sendGaSubmitVaasTx(client, vaa);
+  const tx = await sendGaSubmitVaasTx(wormchainClient, vaa);
   console.log('TX:', tx);
 
   t.pass();
 });
 
 test('attest', async t => {
-  const { client } = t.context;
+  const { wormchainClient } = t.context;
   const { emitterAddress, tokenAddress } = config;
 
   const emitterInfo = {
@@ -156,7 +173,7 @@ test('attest', async t => {
   const attestMetaVaa = createAttestMetaVAA(emitterInfo, payloadInfo, true);
   console.log(attestMetaVaa);
 
-  const txHash = await sendTbSubmitVaaTx(client, attestMetaVaa);
+  const txHash = await sendTbSubmitVaaTx(wormchainClient, attestMetaVaa);
   console.log('HASH', txHash);
 
   t.pass();
@@ -165,8 +182,9 @@ test('attest', async t => {
 // ////////////////// Use Case //////////////////
 
 test('send-to-osmo', async t => {
-  const { client } = t.context;
-  const { emitterAddress, tokenAddress, ibcTranslatorAddress } = config;
+  const { wormchainClient } = t.context;
+  const { emitterAddress, tokenAddress, ibcTranslatorAddress, osmosisAddress } =
+    config;
 
   /**
    * @type {import('./vaaHelpers.js').EmitterInfo}
@@ -178,9 +196,7 @@ test('send-to-osmo', async t => {
 
   const encoder = new TextEncoder();
 
-  const osmosisReceiver = encoder.encode(
-    'osmo1lwc58qfnwycw990cvq0yefnjqqvjgadlyaxdp6',
-  );
+  const osmosisReceiver = encoder.encode(osmosisAddress);
   const transferPayload = {
     gateway_transfer: {
       chain: 20, // Osmosis
@@ -207,14 +223,20 @@ test('send-to-osmo', async t => {
   const vaa = createTransferWithPayloadVAA(emitterInfo, payloadInfo, true);
   t.log(Buffer.from(serialize(vaa)).toString('hex'));
 
-  const tx = await sendCompleteTransferAndConvertTx(client, vaa);
+  const tx = await sendCompleteTransferAndConvertTx(wormchainClient, vaa);
   console.log('TX:', tx);
   t.pass();
 });
 
 test('introduce-transfer-vaa-to-globalAccountant', async t => {
-  const { client } = t.context;
-  const { emitterAddress, tokenAddress, ibcTranslatorAddress } = config;
+  const { wormchainClient } = t.context;
+  const {
+    emitterAddress,
+    tokenAddress,
+    ibcTranslatorAddress,
+    osmosisAddress,
+    globalAccountantAddress,
+  } = config;
 
   /**
    * @type {import('./vaaHelpers.js').EmitterInfo}
@@ -226,9 +248,7 @@ test('introduce-transfer-vaa-to-globalAccountant', async t => {
 
   const encoder = new TextEncoder();
 
-  const osmosisReceiver = encoder.encode(
-    'osmo1lwc58qfnwycw990cvq0yefnjqqvjgadlyaxdp6',
-  );
+  const osmosisReceiver = encoder.encode(osmosisAddress);
   const transferPayload = {
     gateway_transfer: {
       chain: 20, // Osmosis
@@ -254,20 +274,39 @@ test('introduce-transfer-vaa-to-globalAccountant', async t => {
   const vaa = createTransferWithPayloadVAA(emitterInfo, payloadInfo, true);
   console.log(vaa);
 
-  const tx = await sendGaSubmitVaasTx(client, vaa);
+  const tx = await sendGaSubmitVaasTx(wormchainClient, vaa);
   console.log('TX:', tx);
 
   const rpc = await CosmWasmClient.connect(config.wormchainRpc);
 
-  const { accounts } = await rpc.queryContractSmart(
-    'wormhole14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9srrg465',
-    { all_accounts: {} },
-  );
+  const { accounts } = await rpc.queryContractSmart(globalAccountantAddress, {
+    all_accounts: {},
+  });
   console.log('accounts:', accounts);
 
   t.pass();
 });
 
-test.todo('send from osmo');
+test('send-ibc-message', async t => {
+  const { osmosisClient } = t.context;
+  const { osmosisAddress } = config;
+
+  /* Remember to update the denom and channelId with the current values.
+   * Use the targets check-wormchain-channels and check-osmosis-ibc-denom
+   */
+  const denom =
+    'ibc/F6B2CE2620D01C81B573E0CF7FCB30FC3A3090CA71D8B1AD70B067887BD079A7';
+  const channelId = 'channel-10219';
+
+  const tx = await sendGatewayIbcTx(
+    osmosisClient,
+    osmosisAddress,
+    denom,
+    channelId,
+  );
+  console.log('TX:', tx);
+
+  t.pass();
+});
 
 test.todo('verify-vaa');
