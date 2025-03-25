@@ -8354,6 +8354,7 @@ __metadata:
   resolution: "wh-experiments@workspace:."
   dependencies:
     "@certusone/wormhole-sdk": "npm:^0.10.18"
+    "@cosmjs/stargate": "npm:^0.32.0"
     "@eslint/js": "npm:^9.19.0"
     "@solana-developers/helpers": "npm:^2.6.0"
     "@solana/spl-token": "npm:^0.4.9"

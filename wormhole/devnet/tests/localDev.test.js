@@ -8,7 +8,7 @@ import {
   createUpdateChannelVAA,
   createTransferWithPayloadVAA,
   createRegisterWormchainToAccountantVAA,
-} from './vaaHelpers.js';
+} from '../helpers/vaaHelpers.js';
 import {
   createSigner,
   sendCompleteTransferAndConvertTx,
@@ -17,7 +17,7 @@ import {
   sendTbSubmitVaaTx,
   sendUpdateChannelInfoTx,
   sendGatewayIbcTx,
-} from './txHelpers.js';
+} from '../helpers/txHelpers.js';
 
 const config = {
   emitterAddress: Wormhole.parseAddress(

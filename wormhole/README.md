@@ -24,4 +24,63 @@ the Osmosis' `osmo-test-5` testnet as one of our end destination. In this file, 
 prepare the environment for our actual test case.
 
 * `txHelpers.js` is a helper that focuses on signing and sending transactions to Wormchain and possibly to Osmosis.
-  
+
+# Set environment and state (WIP)
+
+- Spin up Wormchain  
+> tilt up -- --wormchain
+
+- Spin up Hermes relayer
+> hermes --config config.toml start
+
+- Register new channel
+> hermes --config config.toml create channel --a-chain osmo-test-5 --b-chain wormchain --a-port transfer --b-port transfer --new-client-connection
+
+- Query channels
+> ./build/wormchaind q ibc channel channels --node http://localhost:26659
+
+- Update channel info 
+> yarn ava localDev.test.js -m 'update-channel-info'
+
+- Attest token
+> yarn ava localDev.test.js -m 'attest'
+
+- Set ibcTranslator as the middleware contract (FAILING)
+> yarn ava localDev.test.js -m 'mw-set-vaa'
+
+- Register tokenBridge on globalAccountant
+> yarn ava localDev.test.js -m 'register-tb-to-accountant'
+
+- Introduce transfer vaa on globalAccountant
+> yarn ava localDev.test.js -m 'introduce-transfer-vaa-to-accountant'
+
+- Send token to Osmosis
+> yarn ava localDev.test.js -m 'send-to-osmo'
+
+- Confirm packet was relayed
+> hermes --config config.toml clear packets --port transfer --channel channel-0 --chain wormchain
+
+- Verify osmosis balance
+> osmosisd q bank balances osmo19clev5t3932g0cg2c8xa5sg5n77932qec9cyuh --node https://rpc.testnet.osmosis.zone:443
+
+- Get channel-ID and IBC denom 
+> make check-wormchain-channels
+> make check-osmosis-ibc-denom
+
+- Send IBC transfer from Osmosis
+> Update the test with the correct channel-ID and IBC denom 
+> yarn ava localDev.test.js -m 'send-ibc-message'
+
+```sh
+make update-channel-info
+make check-channel-info
+make attest-token
+make check-cw20-instances
+make gov-set-mw
+make check-mw-contract
+
+make check-chain-registration
+
+make check-wormchain-channels
+make check-osmosis-ibc-denom
+```

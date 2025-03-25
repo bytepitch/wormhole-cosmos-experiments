@@ -1,5 +1,5 @@
-WORMCHAIN_PATH=../wormhole/wormchain/
-WORM_CLIENT_PATH=../wormhole/clients/js
+WORMCHAIN_PATH=../../../wormhole/wormchain/
+WORM_CLIENT_PATH=../../../wormhole/clients/js
 
 CORE_ADDR=wormhole1ghd753shjuwexxywmgs4xz7x2q732vcnkm6h2pyv9s6ah3hylvrqtm7t3h
 TB_ADDR=wormhole1eyfccmjm6732k7wp4p6gdjwhxjwsvje44j0hfx8nkgrm8fs7vqfssvpdkx
