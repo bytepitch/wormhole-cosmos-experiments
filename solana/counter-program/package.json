@@ -1,0 +1,18 @@
+{
+  "name": "counter-program",
+  "version": "0.1.0",
+  "description": "Counter program written using only Solana tooling",
+  "packageManager": "yarn@4.5.0",
+  "scripts": {
+    "test": "yarn ava test tests/test.js",
+    "clean-target": "cargo clean --manifest-path 'program/Cargo.toml'",
+    "clean-ledger": "rm -rf ./test-ledger",
+    "build": "cargo build-bpf --manifest-path 'program/Cargo.toml' -- --locked",
+    "deploy": "solana program deploy ./program/target/deploy/counter_solana_native.so",
+    "validator": "solana-test-validator"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.91.4",
+    "ava": "^6.2.0"
+  }
+}
