@@ -1,11 +1,81 @@
-use bridge::PostVAA;
+use bridge::{
+    PostVAA,
+    SerializePayload,
+};
 use libsecp256k1::SecretKey;
+use primitive_types::U256;
+use rand::Rng;
+use solana_program::pubkey::Pubkey;
+use solana_program_test::{
+    tokio,
+    BanksClient,
+};
+use solana_sdk::{
+    signature::{
+        Keypair,
+        Signer,
+    },
+    transport::TransportError,
+};
+use solitaire::{
+    processors::seeded::Seeded,
+    AccountState,
+};
+use std::{
+    collections::HashMap,
+    fmt,
+    str::FromStr,
+};
 use token_bridge::{
+    accounts::ConfigAccount,
     instructions,
+    messages::PayloadTransferWithPayload,
     types::*,
 };
 
 mod common;
+
+const CHAIN_ID_SOLANA: u16 = 1;
+const CHAIN_ID_ETH: u16 = 2;
+
+/// Small helper to track and provide sequences during tests. This is in particular needed for
+/// guardian operations that require them for derivations.
+struct Sequencer {
+    sequences: HashMap<[u8; 32], u64>,
+}
+
+struct Context {
+    /// Guardian public keys.
+    guardians: Vec<[u8; 20]>,
+
+    /// Guardian secret keys.
+    guardian_keys: Vec<SecretKey>,
+
+    /// Address of the core bridge contract.
+    bridge: Pubkey,
+
+    /// Shared RPC client for tests to make transactions with.
+    client: BanksClient,
+
+    /// Payer key with a ton of lamports to ease testing with.
+    payer: Keypair,
+
+    /// Track nonces throughout the tests.
+    seq: Sequencer,
+
+    /// Address of the token bridge itself that we wish to test.
+    token_bridge: Pubkey,
+
+    /// Keypairs for mint information, required in multiple tests.
+    mint_authority: Keypair,
+    mint: Keypair,
+    mint_meta: Pubkey,
+
+    /// Keypairs for test token accounts.
+    token_authority: Keypair,
+    token_account: Keypair,
+    metadata_account: Pubkey,
+}
 
 async fn set_up() -> Result<Context, TransportError> {
     let (guardians, guardian_keys) = common::generate_keys(6);
@@ -107,4 +177,36 @@ async fn set_up() -> Result<Context, TransportError> {
     assert_eq!(config.wormhole_bridge, bridge);
 
     Ok(context)
+}
+
+#[tokio::test]
+async fn init() {
+    let Context {
+        ref payer,
+        ref mut client,
+        bridge,
+        token_bridge,
+        mint_authority: _,
+        ref mint,
+        mint_meta: _,
+        metadata_account: _,
+        ref token_authority,
+        ..
+    } = set_up().await.unwrap();
+
+    let nonce = rand::thread_rng().gen();
+    let from_address = Keypair::new().pubkey().to_bytes();
+    let payload: Vec<u8> = vec![1, 2, 3];
+    let payload = PayloadTransferWithPayload {
+        amount: U256::from(100u128),
+        token_address: mint.pubkey().to_bytes(),
+        token_chain: CHAIN_ID_SOLANA,
+        to: token_authority.pubkey().to_bytes(),
+        to_chain: CHAIN_ID_SOLANA,
+        from_address,
+        payload,
+    };
+    let message = payload.try_to_vec().unwrap();
+
+    let (vaa, body, _) = common::generate_vaa([0u8; 32], CHAIN_ID_ETH, message, nonce, 1);
 }

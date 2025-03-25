@@ -19,6 +19,10 @@ token-bridge = { git = "https://github.com/wormhole-foundation/wormhole", subdir
 solitaire = { git = "https://github.com/wormhole-foundation/wormhole", subdirectory = "solana/solitaire/program" }
 byteorder = "1.4.3"
 sha3 = "0.9.1"
+spl-token = { version = "=3.3.0", features = ["no-entrypoint"] }
+spl-token-metadata = { git = "https://github.com/wormhole-foundation/metaplex-program-library", rev = "a7ab32ab0defd89c98f205c80ebdaf77ed60152d", package = "mpl-token-metadata" }
+primitive-types = { version = "0.9.0", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 hex = "*"

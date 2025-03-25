@@ -32,6 +32,7 @@ use solana_sdk::{
 };
 use std::{
     env,
+    fmt,
     io::{
         Cursor,
         Write,
