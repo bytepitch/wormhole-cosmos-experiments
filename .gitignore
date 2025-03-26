@@ -1,2 +1,4 @@
 *node_modules/
+solana/counter-program/program/target
+solana/counter-program/program/artifacts
 .env
