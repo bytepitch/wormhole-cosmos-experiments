@@ -1,4 +1,8 @@
 use bridge::{
+    accounts::{
+        PostedVAA,
+        PostedVAADerivationData,
+    },
     PostVAA,
     SerializePayload,
 };
@@ -191,6 +195,7 @@ async fn init() {
         mint_meta: _,
         metadata_account: _,
         ref token_authority,
+        ref guardian_keys,
         ..
     } = set_up().await.unwrap();
 
@@ -209,4 +214,17 @@ async fn init() {
     let message = payload.try_to_vec().unwrap();
 
     let (vaa, body, _) = common::generate_vaa([0u8; 32], CHAIN_ID_ETH, message, nonce, 1);
+    let signature_set = common::verify_signatures(client, &bridge, payer, body, guardian_keys, 0)
+        .await
+        .unwrap();
+    common::post_vaa(client, bridge, payer, signature_set, vaa.clone())
+        .await
+        .unwrap();
+    let msg_derivation_data = &PostedVAADerivationData {
+        payload_hash: body.to_vec(),
+    };
+    let message_key =
+        PostedVAA::<'_, { AccountState::MaybeInitialized }>::key(msg_derivation_data, &bridge);
+
+    // common::init(client, program, payer, message_key);
 }

@@ -9,7 +9,10 @@ use libsecp256k1::{
 };
 use sha3::Digest;
 use solana_program::{
-    instruction::Instruction,
+    instruction::{
+        AccountMeta,
+        Instruction,
+    },
     program_pack::Pack,
     pubkey::Pubkey,
     system_instruction,
@@ -67,6 +70,7 @@ pub async fn execute<T: Signers>(
 
 mod helpers {
     use super::*;
+    use borsh::BorshSerialize;
     use bridge::{
         accounts::FeeCollector,
         types::ConsistencyLevel,
@@ -74,6 +78,7 @@ mod helpers {
     };
     use solana_program_test::processor;
     use token_bridge::{
+        instruction,
         CompleteNativeData,
         CompleteNativeWithPayloadData,
         CompleteWrappedData,
@@ -276,6 +281,22 @@ mod helpers {
             CommitmentLevel::Processed,
         )
         .await
+    }
+
+    pub async fn init(
+        client: &mut BanksClient,
+        program: Pubkey,
+        payer: &Keypair,
+        message_key: Pubkey,
+    ) -> Result<(), BanksClientError> {
+        // let instruction = Instruction {
+        //     program_id: program,
+        //     accounts: vec![AccountMeta::new(payer, true)],
+        //     data: (1, message_key).try_to_vec()?,
+        // };
+
+        // println!("{:#?}", instruction);
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]

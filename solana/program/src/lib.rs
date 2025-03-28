@@ -1,6 +1,12 @@
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{
+    BorshDeserialize,
+    BorshSerialize,
+};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
+    account_info::{
+        next_account_info,
+        AccountInfo,
+    },
     declare_id,
     entrypoint::ProgramResult,
     msg,
@@ -30,6 +36,7 @@ pub fn process_instruction(
             msg!("Instruction: Increment");
             process_increment_counter(accounts, instruction_data_inner)?;
         }
+        1 => process_init(accounts, instruction_data_inner)?,
         _ => {
             msg!("Error: unknown instruction")
         }
@@ -54,5 +61,13 @@ pub fn process_increment_counter(
     counter.serialize(&mut *counter_account.data.borrow_mut())?;
 
     msg!("Counter state incremented to {:?}", counter.count);
+    Ok(())
+}
+
+pub fn process_init(
+    accounts: &[AccountInfo],
+    _instruction_data: &[u8],
+) -> Result<(), ProgramError> {
+    msg!("HELLOO FROM CONTRACT");
     Ok(())
 }
