@@ -2,6 +2,10 @@ use borsh::{
     BorshDeserialize,
     BorshSerialize,
 };
+use bridge::{
+    PostVAAData,
+    PostedVAAData,
+};
 use solana_program::{
     account_info::{
         next_account_info,
@@ -36,7 +40,10 @@ pub fn process_instruction(
             msg!("Instruction: Increment");
             process_increment_counter(accounts, instruction_data_inner)?;
         }
-        1 => process_init(accounts, instruction_data_inner)?,
+        1 => {
+            msg!("BEFORE INST");
+            process_init(accounts, instruction_data_inner)?
+        }
         _ => {
             msg!("Error: unknown instruction")
         }
@@ -69,5 +76,7 @@ pub fn process_init(
     _instruction_data: &[u8],
 ) -> Result<(), ProgramError> {
     msg!("HELLOO FROM CONTRACT");
+    let vaa: PostedVAAData = BorshDeserialize::try_from_slice(_instruction_data).unwrap();
+    msg!("MY_VAA {:?}", vaa.message);
     Ok(())
 }

@@ -69,6 +69,8 @@ pub async fn execute<T: Signers>(
 }
 
 mod helpers {
+    use std::vec;
+
     use super::*;
     use borsh::BorshSerialize;
     use bridge::{
@@ -94,6 +96,12 @@ mod helpers {
         PayloadTransfer,
         PayloadTransferWithPayload,
     };
+
+    #[derive(BorshSerialize, BorshDeserialize)]
+    enum TestInstructions {
+        Increment,
+        Init,
+    }
 
     /// Generate `count` secp256k1 private keys, along with their ethereum-styled public key
     /// encoding: 0x0123456789ABCDEF01234
@@ -124,14 +132,18 @@ mod helpers {
 
     /// Initialize the test environment, spins up a solana-test-validator in the background so that
     /// each test has a fresh environment to work within.
-    pub async fn setup() -> (BanksClient, Keypair, Pubkey, Pubkey) {
-        let (program, token_program) = (
+    pub async fn setup() -> (BanksClient, Keypair, Pubkey, Pubkey, Pubkey) {
+        let (program, token_program, agoric_orca) = (
             env::var("BRIDGE_PROGRAM")
                 .unwrap_or_else(|_| "Bridge1p5gheXUvJ6jGWGeCsgPKgnE3YgdGKRVCMY9o".to_string())
                 .parse::<Pubkey>()
                 .unwrap(),
             env::var("TOKEN_BRIDGE_PROGRAM")
                 .unwrap_or_else(|_| "B6RHG3mfcckmrYN1UhmJzyS1XX3fZKbkeUcpJe9Sy3FE".to_string())
+                .parse::<Pubkey>()
+                .unwrap(),
+            "AbeHXzh1y71QFBJHDUMVy6WUFP1WCULDfQTr6481ZrH6"
+                .to_string()
                 .parse::<Pubkey>()
                 .unwrap(),
         );
@@ -143,13 +155,14 @@ mod helpers {
             token_program,
             processor!(token_bridge::solitaire),
         );
+        builder.add_program("agoric_orca", agoric_orca, None);
 
         // Some instructions go over the limit when tracing is enabled but we need that for better
         // logging.  We don't really care about the limit during these tests anyway.
         builder.set_compute_max_units(u64::MAX);
 
         let (client, payer, _) = builder.start().await;
-        (client, payer, program, token_program)
+        (client, payer, program, token_program, agoric_orca)
     }
 
     /// Wait for a single transaction to fully finalize, guaranteeing chain state has been
@@ -287,16 +300,24 @@ mod helpers {
         client: &mut BanksClient,
         program: Pubkey,
         payer: &Keypair,
-        message_key: Pubkey,
+        vaa: PostVAAData,
     ) -> Result<(), BanksClientError> {
-        // let instruction = Instruction {
-        //     program_id: program,
-        //     accounts: vec![AccountMeta::new(payer, true)],
-        //     data: (1, message_key).try_to_vec()?,
-        // };
+        let instruction = Instruction {
+            program_id: program,
+            accounts: vec![AccountMeta::new(payer.pubkey(), true)],
+            data: (TestInstructions::Init, vaa).try_to_vec().unwrap(),
+        };
 
-        // println!("{:#?}", instruction);
-        Ok(())
+        println!("{:#?}", instruction);
+
+        execute(
+            client,
+            payer,
+            &[payer],
+            &[instruction],
+            CommitmentLevel::Processed,
+        )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]

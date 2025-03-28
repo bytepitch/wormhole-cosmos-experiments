@@ -40,7 +40,7 @@ use token_bridge::{
 mod common;
 
 const CHAIN_ID_SOLANA: u16 = 1;
-const CHAIN_ID_ETH: u16 = 2;
+const CHAIN_ID_ETH: u16 = 31;
 
 /// Small helper to track and provide sequences during tests. This is in particular needed for
 /// guardian operations that require them for derivations.
@@ -70,6 +70,9 @@ struct Context {
     /// Address of the token bridge itself that we wish to test.
     token_bridge: Pubkey,
 
+    /// Address of the Agoric's orca contract itself that we wish to test.
+    agoric_orca: Pubkey,
+
     /// Keypairs for mint information, required in multiple tests.
     mint_authority: Keypair,
     mint: Keypair,
@@ -84,7 +87,7 @@ struct Context {
 async fn set_up() -> Result<Context, TransportError> {
     let (guardians, guardian_keys) = common::generate_keys(6);
 
-    let (mut client, payer, bridge, token_bridge) = common::setup().await;
+    let (mut client, payer, bridge, token_bridge, agoric_orca) = common::setup().await;
 
     // Setup a Bridge to test against.
     common::initialize_bridge(&mut client, bridge, &payer, &guardians).await?;
@@ -125,6 +128,7 @@ async fn set_up() -> Result<Context, TransportError> {
         client,
         payer,
         token_bridge,
+        agoric_orca,
         mint_authority: Keypair::new(),
         mint,
         mint_meta: metadata_account,
@@ -190,6 +194,7 @@ async fn init() {
         ref mut client,
         bridge,
         token_bridge,
+        agoric_orca,
         mint_authority: _,
         ref mint,
         mint_meta: _,
@@ -226,5 +231,5 @@ async fn init() {
     let message_key =
         PostedVAA::<'_, { AccountState::MaybeInitialized }>::key(msg_derivation_data, &bridge);
 
-    // common::init(client, program, payer, message_key);
+    common::init(client, agoric_orca, payer, vaa).await.unwrap();
 }
