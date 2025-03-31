@@ -230,6 +230,8 @@ async fn init() {
     };
     let message_key =
         PostedVAA::<'_, { AccountState::MaybeInitialized }>::key(msg_derivation_data, &bridge);
-
-    common::init(client, agoric_orca, payer, vaa).await.unwrap();
+    println!("BEFORE_SEND {:?}", from_address);
+    common::init(client, agoric_orca, payer, message_key, vaa)
+        .await
+        .unwrap();
 }

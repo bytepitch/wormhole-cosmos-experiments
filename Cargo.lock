@@ -66,6 +66,7 @@ dependencies = [
  "mpl-token-metadata",
  "primitive-types",
  "rand 0.7.3",
+ "rocksalt",
  "serde",
  "sha3 0.9.1",
  "solana-program",

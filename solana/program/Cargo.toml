@@ -17,6 +17,7 @@ solana-program = "=1.10.31"
 wormhole-bridge-solana = { git = "https://github.com/wormhole-foundation/wormhole", features = ["cpi"] }
 token-bridge = { git = "https://github.com/wormhole-foundation/wormhole", features = ["cpi"] }
 solitaire = { git = "https://github.com/wormhole-foundation/wormhole" }
+rocksalt = { git = "https://github.com/wormhole-foundation/wormhole" }
 byteorder = "1.4.3"
 sha3 = "0.9.1"
 spl-token = { version = "=3.3.0", features = ["no-entrypoint"] }

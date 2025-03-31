@@ -300,11 +300,12 @@ mod helpers {
         client: &mut BanksClient,
         program: Pubkey,
         payer: &Keypair,
+        message_key: Pubkey,
         vaa: PostVAAData,
     ) -> Result<(), BanksClientError> {
         let instruction = Instruction {
             program_id: program,
-            accounts: vec![AccountMeta::new(payer.pubkey(), true)],
+            accounts: vec![AccountMeta::new_readonly(message_key, false)],
             data: (TestInstructions::Init, vaa).try_to_vec().unwrap(),
         };
 
