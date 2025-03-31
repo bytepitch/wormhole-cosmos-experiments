@@ -5,7 +5,11 @@ use borsh::{
 use bridge::{
     PostVAAData,
     PostedVAAData,
+    DeserializePayload,
 };
+
+use token_bridge::messages::PayloadTransferWithPayload;
+
 use solana_program::{
     account_info::{
         next_account_info,
@@ -17,6 +21,8 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
 };
+
+use hex;
 
 mod state;
 use state::*;
@@ -72,11 +78,26 @@ pub fn process_increment_counter(
 }
 
 pub fn process_init(
-    accounts: &[AccountInfo],
+    _accounts: &[AccountInfo],
     _instruction_data: &[u8],
 ) -> Result<(), ProgramError> {
-    msg!("HELLOO FROM CONTRACT");
-    let vaa: PostedVAAData = BorshDeserialize::try_from_slice(_instruction_data).unwrap();
-    msg!("MY_VAA {:?}", vaa.message);
+    msg!("HELLO FROM CONTRACT");
+    
+    let vaa: PostVAAData = BorshDeserialize::try_from_slice(_instruction_data).unwrap();
+    msg!("MY VAA PAYLOAD {:?}", vaa.payload);
+
+
+    let payload = PayloadTransferWithPayload::deserialize(&mut vaa.payload.as_slice())
+        .map_err(|_| ProgramError::InvalidInstructionData)?;
+
+    msg!("Parsed Payload:");
+    msg!("Amount: {}", payload.amount);
+    msg!("Token Address: {:?}", hex::encode(&payload.token_address));
+    msg!("Token Chain: {}", payload.token_chain);
+    msg!("To Address: {:?}", hex::encode(&payload.to));
+    msg!("To Chain: {}", payload.to_chain);
+    msg!("From Address: {:?}", hex::encode(&payload.from_address));
+    msg!("Payload: {:?}", hex::encode(&payload.payload));
+
     Ok(())
-}
+
